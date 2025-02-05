@@ -20,7 +20,7 @@ project_root = str(Path.cwd().resolve())
 data_dir = project_root + "/data"
 data_out = data_dir + "/clean/gse_genai_articles.csv"
 
-# Define search urls for the HTML requests.
+# Define search urls for the HTML requests
 repo_base_url = "https://scale.stanford.edu"
 teaching_k12_search_url = repo_base_url + "/genai/repository?search_api_fulltext=&application%5B42%5D=42&benefits%5B34%5D=34&benefits%5B36%5D=36&benefits%5B35%5D=35"
 impact_secondary_search_url = repo_base_url + "/genai/repository?search_api_fulltext=&benefits%5B36%5D=36&benefits%5B35%5D=35&study_design%5B55%5D=55"
@@ -36,7 +36,7 @@ def main(search_urls):
 
 # Scrapes the search results for every "Teaching - Instructional Materials in K12" and
 # "Impact - Randomized Controlled Trials in secondary education" page,
-# and adds them to the set of pages in which to look for articles.
+# and adds them to the set of pages in which to look for articles
 def identify_pages_to_scrape(search_urls):
     pages_to_scrape = set()
 
@@ -50,7 +50,7 @@ def identify_pages_to_scrape(search_urls):
         parsed_response = BeautifulSoup(response.text, 'html.parser')
         pagination_data = parsed_response.select("ul.pagination li a.page-link")
 
-        # Catches the case where there is no pagination data, and we only have one page to scrape.
+        # Catches the case where there is no pagination data, and we only have one page to scrape
         if not pagination_data:
             pages_to_scrape.add(search_url)
             continue
@@ -63,7 +63,7 @@ def identify_pages_to_scrape(search_urls):
 
 
 # Scrapes each previously identified page for the article urls and
-# adds them to the set of articles to scrape.
+# adds them to the set of articles to scrape
 def identify_articles_to_scrape(page_urls):
     articles_to_scrape = set()
     article_titles = set()
@@ -78,11 +78,11 @@ def identify_articles_to_scrape(page_urls):
         parsed_response = BeautifulSoup(response.text, 'html.parser')
         articles_to_parse = parsed_response.select("ul.list-papers li.col")
         
-        # Extracts the individual article URLs from the page HTML.
+        # Extracts the individual article URLs from the page HTML
         for article in articles_to_parse:
 
-            # Checks if the article title is already in the set of article titles to avoid duplicates.
-            article_title = article.select_one("div.card a[hreflang='en']").get_text(strip=True)
+            # Checks if the article title is already in the set of article titles to avoid duplicates
+            article_title = article.select_one("div.card a[hreflang='en']").get_text(strip = True)
             if article_title not in article_titles:
                 article_titles.add(article_title)
                 article_sub_url = article.select_one("div.card a[href]")
@@ -111,10 +111,10 @@ def extract_article_data(articles_to_scrape):
 
         # Gathers metadata from the article
         article_metadata = {}
-        title = parsed_article.select_one("h1").get_text(strip=True)
+        title = parsed_article.select_one("h1").get_text(strip = True)
         article_metadata["Title"] = title
 
-        # Identifies all the metadata fields within the article HTML node.
+        # Identifies all the metadata fields within the article HTML node
         node_content = parsed_article.select_one("div.node__content").select("div.field")
 
         for field in node_content:
@@ -127,28 +127,28 @@ def extract_article_data(articles_to_scrape):
     return article_data
 
 
-# Parses each field of the article and returns an updated dictionary of the relevant metadata.
+# Parses each field of the article and returns an updated dictionary of the relevant metadata
 def extract_metadata_field(metadata_field, article_metadata):
     field_name_html = metadata_field.select_one("div.field__label")
         
-    # If the field name is not found, I assume the field is the "Abstract" based on the site structure.
+    # If the field name is not found, I assume the field is the "Abstract" based on the site structure
     if not field_name_html:
         field_name = "Abstract"
-        field_value = metadata_field.select_one("div.field__item, p").get_text(strip=True)
+        field_value = metadata_field.select_one("div.field__item, p").get_text(strip = True)
         article_metadata[field_name] = field_value
         return article_metadata
     
-    # If the field name is found, I use the label given and extract the relevant items, however many there may be.
-    field_name = field_name_html.get_text(strip=True)
+    # If the field name is found, I use the label given and extract the relevant items, however many there may be
+    field_name = field_name_html.get_text(strip = True)
     field_items = metadata_field.select("div.field__item")
 
     item_values = ""
     for item in field_items:
-        # Some fields have multiple items, so I concatenate them together and strip unneccessary linebreaks.
+        # Some fields have multiple items, so I concatenate them together and strip unneccessary linebreaks
         item_value = item.get_text().strip("\n")
         item_values = item_values + item_value
 
-    # Add the field to the dictionary.
+    # Add the field to the dictionary
     article_metadata[field_name] = item_values
 
     return article_metadata
@@ -158,11 +158,12 @@ def extract_metadata_field(metadata_field, article_metadata):
 def write_data_to_csv(data):
     data_gse_genai_articles = pd.DataFrame(data)
 
-    # Rename the "Who Age?" column to "What Age?" and save to a CSV file.
-    (data_gse_genai_articles.rename(columns={"Who age?": "What age?"})
-                            .sort_values(by=["Title"])
+    # Rename the "Who Age?" column to "What Age?" and save to a CSV file
+    (data_gse_genai_articles.rename(columns = {"Who age?": "What age?"})
+                            .sort_values(by = "Title")
                             .to_csv(data_dir + "/clean/gse_genai_articles.csv", index=False))
     
     print(f"Wrote data to CSV at data {data_out}.")
 
+# Run scraper
 main(search_urls)
