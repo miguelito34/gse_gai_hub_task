@@ -143,10 +143,15 @@ def extract_metadata_field(metadata_field, article_metadata):
     field_items = metadata_field.select("div.field__item")
 
     item_values = ""
-    for item in field_items:
-        # Some fields have multiple items, so I concatenate them together and strip unneccessary linebreaks
-        item_value = item.get_text().strip("\n")
-        item_values = item_values + item_value
+    # If the field name is "Link", extract the href attribute
+    if field_name == "Link":
+        publishing_link = metadata_field.select_one("a[href]")
+        item_values = publishing_link["href"]
+    else:
+        for item in field_items:
+            # Some fields have multiple items, so I concatenate them together and strip unneccessary linebreaks
+            item_value = item.get_text().strip("\n")
+            item_values = item_values + item_value
 
     # Add the field to the dictionary
     article_metadata[field_name] = item_values
@@ -161,7 +166,7 @@ def write_data_to_csv(data):
     # Rename the "Who Age?" column to "What Age?" and save to a CSV file
     (data_gse_genai_articles.rename(columns = {"Who age?": "What age?"})
                             .sort_values(by = "Title")
-                            .to_csv(data_dir + "/clean/gse_genai_articles.csv", index=False))
+                            .to_csv(data_out, index=False))
     
     print(f"Wrote data to CSV at data {data_out}.")
 

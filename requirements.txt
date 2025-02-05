@@ -3,5 +3,5 @@ beautifulsoup4
 pandas
 nltk
 plotnine
-mizani.formatters
+mizani
 openpyxl
